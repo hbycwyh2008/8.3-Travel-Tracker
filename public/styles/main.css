@@ -102,3 +102,167 @@ button {
   left: 0;
   bottom: 0;
 }
+
+/* ===== Form Row Layout ===== */
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.form-row input {
+  flex: 1;
+  min-width: 180px;
+  margin: 0;
+}
+
+/* ===== Button Styles (Affordance & Consistency - HCI) ===== */
+.btn {
+  font-family: "Roboto", sans-serif;
+  text-transform: uppercase;
+  outline: 0;
+  border: 0;
+  padding: 15px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-add {
+  background: teal;
+  color: #fff;
+}
+.btn-add:hover {
+  background: #006d6d;
+}
+
+.btn-undo {
+  background: #e07c3a;
+  color: #fff;
+}
+.btn-undo:hover {
+  background: #c46828;
+}
+
+/* ===== Modal (Error Prevention & Visibility - HCI) ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+.modal {
+  background: #2c313a;
+  border-radius: 10px;
+  padding: 28px 32px;
+  min-width: 320px;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  text-align: center;
+  animation: slideUp 0.25s ease;
+}
+.modal-title {
+  font-family: "Roboto", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e8ecf2;
+  margin: 0 0 12px;
+}
+.modal-body {
+  font-family: "Roboto", sans-serif;
+  font-size: 15px;
+  color: #b0b8c8;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.btn-confirm {
+  background: teal;
+  color: #fff;
+  padding: 10px 28px;
+}
+.btn-confirm:hover {
+  background: #006d6d;
+}
+.btn-cancel {
+  background: #555;
+  color: #ddd;
+  padding: 10px 28px;
+}
+.btn-cancel:hover {
+  background: #666;
+}
+
+/* ===== Toast Notification (Feedback - HCI) ===== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 28px;
+  border-radius: 6px;
+  font-family: "Roboto", sans-serif;
+  font-size: 14px;
+  color: #fff;
+  z-index: 2000;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  animation: fadeIn 0.3s ease;
+}
+.toast-warn {
+  background: #e07c3a;
+}
+.toast-info {
+  background: teal;
+}
+
+/* ===== Map Tooltip (Visibility - HCI) ===== */
+.map-tooltip {
+  position: absolute;
+  display: none;
+  padding: 6px 14px;
+  background: rgba(30, 34, 40, 0.92);
+  color: #e8ecf2;
+  font-family: "Roboto", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 5px;
+  pointer-events: none;
+  z-index: 3000;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.ag-canvas_svg path:hover {
+  fill-opacity: 0.7;
+  cursor: pointer;
+}
+
+/* ===== Animations ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

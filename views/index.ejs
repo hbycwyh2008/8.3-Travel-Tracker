@@ -9,10 +9,45 @@
 </head>
 
 <body>
-  <form action="/add" method="post">
-    <input type="text" name="country" autofocus placeholder="<%= locals.error ? error :  'Enter country name'%>">
-    <button type="submit">Add</button>
+  <!-- Add Form with confirmation -->
+  <form id="addForm" action="/add" method="post">
+    <div class="form-row">
+      <input type="text" id="countryInput" name="country" autofocus
+        placeholder="<%= locals.error ? error : 'Enter country name'%>">
+      <button type="submit" class="btn btn-add" title="Add a new country">Add</button>
+      <button type="button" id="undoBtn" class="btn btn-undo" title="Undo the last added country">&#x21A9; Undo</button>
+    </div>
   </form>
+
+  <!-- Confirmation Modal (Error Prevention - HCI) -->
+  <div id="confirmModal" class="modal-overlay" style="display:none;">
+    <div class="modal">
+      <p class="modal-title">Confirm Addition</p>
+      <p class="modal-body">Are you sure you want to add "<span id="confirmCountryName"></span>"?</p>
+      <div class="modal-actions">
+        <button id="confirmYes" class="btn btn-confirm">Yes, Add</button>
+        <button id="confirmNo" class="btn btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Undo Confirmation Modal (Error Prevention - HCI) -->
+  <div id="undoModal" class="modal-overlay" style="display:none;">
+    <div class="modal">
+      <p class="modal-title">Confirm Undo</p>
+      <p class="modal-body">Are you sure you want to remove the last added country?</p>
+      <div class="modal-actions">
+        <button id="undoYes" class="btn btn-confirm">Yes, Undo</button>
+        <button id="undoNo" class="btn btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification (Feedback - HCI) -->
+  <div id="toast" class="toast" style="display:none;"></div>
+
+  <!-- Map Tooltip (Visibility of System Status - HCI) -->
+  <div id="mapTooltip" class="map-tooltip"></div>
 
   <section class="ag-canvas">
     <svg class="ag-canvas_svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -374,12 +409,124 @@
   <h2 class="total-count">Total Countries: <%=total%>
   </h2>
   <script>
-    const country_codes = "<%= countries %>".split(",") 
-    console.log(typeof ("<%= countries %>"))
+    const country_codes = "<%= countries %>".split(",");
+    console.log(typeof ("<%= countries %>"));
     country_codes.forEach(code => {
-      document.getElementById(code).style.fill = 'teal'
+      const el = document.getElementById(code);
+      if (el) el.style.fill = 'teal';
     });
 
+    // --- Confirmation Modal for Add (Error Prevention) ---
+    const addForm = document.getElementById('addForm');
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmCountryName = document.getElementById('confirmCountryName');
+    const confirmYes = document.getElementById('confirmYes');
+    const confirmNo = document.getElementById('confirmNo');
+    const countryInput = document.getElementById('countryInput');
+
+    addForm.addEventListener('submit', function(e) {
+      const value = countryInput.value.trim();
+      if (!value) {
+        e.preventDefault();
+        showToast('Please enter a country name.', 'warn');
+        countryInput.focus();
+        return;
+      }
+      e.preventDefault();
+      confirmCountryName.textContent = value;
+      confirmModal.style.display = 'flex';
+    });
+
+    confirmYes.addEventListener('click', function() {
+      confirmModal.style.display = 'none';
+      addForm.removeEventListener('submit', arguments.callee);
+      addForm.submit();
+    });
+
+    confirmNo.addEventListener('click', function() {
+      confirmModal.style.display = 'none';
+      countryInput.focus(); // Return focus (HCI: maintain context)
+    });
+
+    // Close modal on overlay click (HCI: Flexibility)
+    confirmModal.addEventListener('click', function(e) {
+      if (e.target === confirmModal) {
+        confirmModal.style.display = 'none';
+        countryInput.focus();
+      }
+    });
+
+    // Close modal on Escape key (HCI: Keyboard accessibility)
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        confirmModal.style.display = 'none';
+        undoModal.style.display = 'none';
+        countryInput.focus();
+      }
+    });
+
+    // --- Undo Button with Confirmation ---
+    const undoBtn = document.getElementById('undoBtn');
+    const undoModal = document.getElementById('undoModal');
+    const undoYes = document.getElementById('undoYes');
+    const undoNo = document.getElementById('undoNo');
+
+    undoBtn.addEventListener('click', function() {
+      undoModal.style.display = 'flex';
+    });
+
+    undoYes.addEventListener('click', function() {
+      undoModal.style.display = 'none';
+      // Submit undo via a hidden form
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/undo';
+      document.body.appendChild(form);
+      form.submit();
+    });
+
+    undoNo.addEventListener('click', function() {
+      undoModal.style.display = 'none';
+      countryInput.focus();
+    });
+
+    undoModal.addEventListener('click', function(e) {
+      if (e.target === undoModal) {
+        undoModal.style.display = 'none';
+        countryInput.focus();
+      }
+    });
+
+    // --- Map Tooltip on Hover (Visibility - HCI) ---
+    const tooltip = document.getElementById('mapTooltip');
+    const svgPaths = document.querySelectorAll('.ag-canvas_svg path');
+
+    svgPaths.forEach(path => {
+      path.addEventListener('mouseenter', function(e) {
+        const name = this.getAttribute('title');
+        if (!name) return;
+        tooltip.textContent = name;
+        tooltip.style.display = 'block';
+      });
+
+      path.addEventListener('mousemove', function(e) {
+        tooltip.style.left = e.pageX + 14 + 'px';
+        tooltip.style.top = e.pageY + 14 + 'px';
+      });
+
+      path.addEventListener('mouseleave', function() {
+        tooltip.style.display = 'none';
+      });
+    });
+
+    // --- Toast helper (Feedback - HCI) ---
+    function showToast(message, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast toast-' + (type || 'info');
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
   </script>
 </body>
 

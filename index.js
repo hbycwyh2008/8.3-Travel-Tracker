@@ -57,6 +57,21 @@ app.post("/add", async (req, res) => {
   }
 });
 
+app.post("/undo", async (req, res) => {
+  try {
+    const result = await db.query(
+      "DELETE FROM visited_countries WHERE id = (SELECT MAX(id) FROM visited_countries) RETURNING country_code",
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).send("Nothing to undo");
+    }
+    res.redirect("/");
+  } catch (err) {
+    console.error("Failed to undo last country", err);
+    res.status(500).send("Database error");
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
