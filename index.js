@@ -23,7 +23,12 @@ app.get("/", async (req, res) => {
     const result = await db.query("SELECT country_code FROM visited_countries");
     const countries = result.rows.map((country) => country.country_code);
 
-    res.render("index.ejs", { countries, total: countries.length });
+    res.render("index.ejs", {
+      countries,
+      total: countries.length,
+      error: req.query.error || null,
+      success: req.query.success || null,
+    });
   } catch (err) {
     console.error("Failed to load visited countries", err);
     res.status(500).send("Database error");
@@ -43,32 +48,81 @@ app.post("/add", async (req, res) => {
       const data = result.rows[0];
       const countryCode = data.country_code;
 
+      // Check if already visited
+      const existing = await db.query(
+        "SELECT 1 FROM visited_countries WHERE country_code = $1",
+        [countryCode],
+      );
+      if (existing.rows.length > 0) {
+        return res.redirect(
+          "/?error=" +
+            encodeURIComponent('"' + input + '" has already been added.'),
+        );
+      }
+
       await db.query(
         "INSERT INTO visited_countries (country_code) VALUES ($1)",
         [countryCode],
       );
-      res.redirect("/");
+      res.redirect(
+        "/?success=" +
+          encodeURIComponent('"' + input + '" added successfully!'),
+      );
     } else {
-      res.status(404).send("Country not found");
+      res.redirect(
+        "/?error=" +
+          encodeURIComponent(
+            'Country "' + input + '" was not found. Please check the spelling.',
+          ),
+      );
     }
   } catch (err) {
     console.error("Failed to add country", err);
-    res.status(500).send("Database error");
+    res.redirect(
+      "/?error=" + encodeURIComponent("Database error. Please try again."),
+    );
   }
 });
 
-app.post("/undo", async (req, res) => {
+app.post("/remove", async (req, res) => {
+  const input = req.body["country"];
+
   try {
+    // Look up the country code
+    const lookup = await db.query(
+      "SELECT country_code FROM countries WHERE country_name = $1",
+      [input],
+    );
+
+    if (lookup.rows.length === 0) {
+      return res.redirect(
+        "/?error=" +
+          encodeURIComponent(
+            'Country "' + input + '" was not found. Please check the spelling.',
+          ),
+      );
+    }
+
+    const countryCode = lookup.rows[0].country_code;
+
     const result = await db.query(
-      "DELETE FROM visited_countries WHERE id = (SELECT MAX(id) FROM visited_countries) RETURNING country_code",
+      "DELETE FROM visited_countries WHERE country_code = $1 RETURNING country_code",
+      [countryCode],
     );
     if (result.rows.length === 0) {
-      return res.status(404).send("Nothing to undo");
+      return res.redirect(
+        "/?error=" +
+          encodeURIComponent('"' + input + '" is not in your visited list.'),
+      );
     }
-    res.redirect("/");
+    res.redirect(
+      "/?success=" + encodeURIComponent('"' + input + '" has been removed.'),
+    );
   } catch (err) {
-    console.error("Failed to undo last country", err);
-    res.status(500).send("Database error");
+    console.error("Failed to remove country", err);
+    res.redirect(
+      "/?error=" + encodeURIComponent("Database error. Please try again."),
+    );
   }
 });
 

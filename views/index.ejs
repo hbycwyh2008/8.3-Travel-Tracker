@@ -15,7 +15,7 @@
       <input type="text" id="countryInput" name="country" autofocus
         placeholder="<%= locals.error ? error : 'Enter country name'%>">
       <button type="submit" class="btn btn-add" title="Add a new country">Add</button>
-      <button type="button" id="undoBtn" class="btn btn-undo" title="Undo the last added country">&#x21A9; Undo</button>
+      <button type="button" id="undoBtn" class="btn btn-undo" title="Remove a specific country from your list">&#x21A9; Remove</button>
     </div>
   </form>
 
@@ -31,13 +31,15 @@
     </div>
   </div>
 
-  <!-- Undo Confirmation Modal (Error Prevention - HCI) -->
+  <!-- Undo/Remove Modal (Error Prevention - HCI) -->
   <div id="undoModal" class="modal-overlay" style="display:none;">
     <div class="modal">
-      <p class="modal-title">Confirm Undo</p>
-      <p class="modal-body">Are you sure you want to remove the last added country?</p>
+      <p class="modal-title">Remove a Country</p>
+      <p class="modal-body">Type the name of the country you want to remove from your visited list.</p>
+      <input type="text" id="removeCountryInput" class="modal-input" placeholder="Enter country name" autofocus>
+      <p class="modal-hint">Hint: Enter the exact English name (e.g. "France", "China", "United States").</p>
       <div class="modal-actions">
-        <button id="undoYes" class="btn btn-confirm">Yes, Undo</button>
+        <button id="undoYes" class="btn btn-confirm">Remove</button>
         <button id="undoNo" class="btn btn-cancel">Cancel</button>
       </div>
     </div>
@@ -410,11 +412,18 @@
   </h2>
   <script>
     const country_codes = "<%= countries %>".split(",");
-    console.log(typeof ("<%= countries %>"));
     country_codes.forEach(code => {
       const el = document.getElementById(code);
       if (el) el.style.fill = 'teal';
     });
+
+    // --- Show server messages as toast on page load ---
+    <% if (locals.error) { %>
+      document.addEventListener('DOMContentLoaded', () => showToast('<%= error %>', 'warn'));
+    <% } %>
+    <% if (locals.success) { %>
+      document.addEventListener('DOMContentLoaded', () => showToast('<%= success %>', 'info'));
+    <% } %>
 
     // --- Confirmation Modal for Add (Error Prevention) ---
     const addForm = document.getElementById('addForm');
@@ -465,24 +474,46 @@
       }
     });
 
-    // --- Undo Button with Confirmation ---
+    // --- Undo/Remove Button ---
     const undoBtn = document.getElementById('undoBtn');
     const undoModal = document.getElementById('undoModal');
     const undoYes = document.getElementById('undoYes');
     const undoNo = document.getElementById('undoNo');
+    const removeCountryInput = document.getElementById('removeCountryInput');
 
     undoBtn.addEventListener('click', function() {
       undoModal.style.display = 'flex';
+      removeCountryInput.value = '';
+      setTimeout(() => removeCountryInput.focus(), 100);
     });
 
     undoYes.addEventListener('click', function() {
+      const value = removeCountryInput.value.trim();
+      if (!value) {
+        showToast('Please enter a country name to remove.', 'warn');
+        removeCountryInput.focus();
+        return;
+      }
       undoModal.style.display = 'none';
-      // Submit undo via a hidden form
+      // Submit remove via a hidden form
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = '/undo';
+      form.action = '/remove';
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'country';
+      input.value = value;
+      form.appendChild(input);
       document.body.appendChild(form);
       form.submit();
+    });
+
+    // Allow pressing Enter in the remove input
+    removeCountryInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        undoYes.click();
+      }
     });
 
     undoNo.addEventListener('click', function() {
@@ -510,8 +541,8 @@
       });
 
       path.addEventListener('mousemove', function(e) {
-        tooltip.style.left = e.pageX + 14 + 'px';
-        tooltip.style.top = e.pageY + 14 + 'px';
+        tooltip.style.left = e.clientX + 14 + 'px';
+        tooltip.style.top = e.clientY + 14 + 'px';
       });
 
       path.addEventListener('mouseleave', function() {
